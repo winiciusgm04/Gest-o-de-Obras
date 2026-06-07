@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gestão de Pendências de Obras</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;
+  --surface:#ffffff;
+  --surface2:#f0efe9;
+  --border:#e0ddd5;
+  --border2:#ccc9bf;
+  --text:#1a1917;
+  --text2:#6b6860;
+  --text3:#a09e98;
+  --blue:#185FA5;
+  --blue-light:#E6F1FB;
+  --blue-mid:#B5D4F4;
+  --green:#3B6D11;
+  --green-light:#EAF3DE;
+  --green-mid:#C0DD97;
+  --red:#A32D2D;
+  --red-light:#FCEBEB;
+  --red-mid:#F7C1C1;
+  --amber-light:#FAEEDA;
+  --amber-mid:#FAC775;
+  --amber-dark:#633806;
+  --radius:8px;
+  --radius-lg:12px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:1280px;margin:0 auto;padding:1.5rem 1rem 3rem}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.topbar h1{font-size:18px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px}
+.topbar h1 i{color:var(--blue);font-size:22px}
+.top-actions{display:flex;gap:7px;align-items:center}
+.save-indicator{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.save-indicator.saved{color:var(--green)}
+
+/* Buttons */
+.btn{font-size:12px;padding:6px 13px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-weight:500}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:#0C447C}
+.btn.sm{font-size:11px;padding:4px 10px}
+
+/* Alert */
+.alert-bar{background:var(--red-light);border:1px solid var(--red-mid);border-radius:var(--radius);padding:11px 14px;margin-bottom:12px;display:none}
+.alert-bar.show{display:flex;align-items:flex-start;gap:10px}
+.alert-icon{color:var(--red);font-size:19px;flex-shrink:0;margin-top:1px}
+.alert-content{flex:1}
+.alert-title{font-size:13px;font-weight:600;color:#791F1F;margin-bottom:5px}
+.alert-item{font-size:12px;color:var(--red);display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.alert-dismiss{cursor:pointer;color:var(--red);font-size:20px;flex-shrink:0;opacity:.6}
+.alert-dismiss:hover{opacity:1}
+
+/* Main tabs */
+.main-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.main-tab{font-size:13px;padding:8px 18px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;display:flex;align-items:center;gap:6px;background:none;border-top:none;border-left:none;border-right:none;font-weight:500}
+.main-tab:hover{color:var(--text)}
+.main-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-badge{font-size:10px;padding:1px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);font-weight:600}
+.tab-badge.red{background:var(--red-mid);color:#791F1F}
+
+.view{display:none}
+.view.active{display:block}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:280px 1fr;gap:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px}
+.panel-hd{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.cbadge{font-size:10px;padding:1px 9px;border-radius:10px;background:var(--blue-mid);color:#0C447C;font-weight:600}
+
+/* Obra tabs */
+.obra-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.obra-tab{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);cursor:pointer;background:transparent;color:var(--text2);transition:all .15s;font-weight:500}
+.obra-tab:hover{border-color:var(--blue);color:var(--blue)}
+.obra-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* Pending list */
+.task-list{display:flex;flex-direction:column;gap:6px;min-height:60px}
+.task-card{background:var(--surface2);border:1px solid var(--border);border-left:3px solid #aaa;border-radius:var(--radius);padding:8px 10px;cursor:grab;user-select:none;position:relative;transition:box-shadow .15s}
+.task-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.task-card[data-p="alta"]{border-left-color:#E24B4A}
+.task-card[data-p="media"]{border-left-color:#EF9F27}
+.task-card[data-p="baixa"]{border-left-color:#639922}
+.task-card.dragging{opacity:.35}
+.task-card:hover .card-actions{opacity:1}
+.card-actions{position:absolute;top:6px;right:7px;display:flex;gap:2px;opacity:0;transition:opacity .15s}
+.icon-btn{width:24px;height:24px;border-radius:5px;border:none;background:transparent;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0;font-size:14px;transition:all .15s}
+.icon-btn:hover{background:var(--surface);color:var(--text)}
+.icon-btn.check:hover{color:var(--green)}
+.icon-btn.del:hover{color:var(--red)}
+.task-name{font-size:12px;color:var(--text);font-weight:600;line-height:1.35;padding-right:54px}
+.task-meta{font-size:10px;color:var(--text2);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pchip{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600}
+.p-alta{background:var(--red-light);color:var(--red)}
+.p-media{background:var(--amber-light);color:var(--amber-dark)}
+.p-baixa{background:var(--green-light);color:var(--green)}
+
+/* Main area */
+.main-area{display:flex;flex-direction:column;gap:12px}
+.sec-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-title i{font-size:17px}
+
+.week-nav{display:flex;align-items:center;gap:6px;margin-left:auto}
+.week-nav-lbl{font-size:12px;color:var(--text2);font-weight:500;min-width:140px;text-align:center}
+.week-nav-btn{width:28px;height:28px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text2);transition:all .15s}
+.week-nav-btn:hover{background:var(--surface2);color:var(--text)}
+.week-nav-today{font-size:11px;height:28px;padding:0 9px;border-radius:var(--radius);border:1px solid var(--blue);background:transparent;cursor:pointer;font-weight:600;color:var(--blue);transition:all .15s}
+.week-nav-today:hover{background:var(--blue-light)}
+
+/* Week grid */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+@media(max-width:700px){.week-grid{grid-template-columns:repeat(4,1fr)}}
+.day-col{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px;min-height:120px;transition:background .15s}
+.day-col.drag-over{background:var(--blue-light);border-color:var(--blue)}
+.day-col.today-col{border-color:var(--blue);border-width:1.5px}
+.day-lbl{font-size:10px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.day-num-wrap{display:flex;justify-content:center;margin-bottom:6px}
+.day-num{font-size:15px;font-weight:600;color:var(--text);width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.day-num.today{background:var(--blue);color:#fff;border-radius:50%}
+.day-tasks{display:flex;flex-direction:column;gap:4px;min-height:36px}
+.placed-task{border-radius:5px;padding:4px 7px;font-size:10px;cursor:grab;display:flex;align-items:flex-start;gap:4px;line-height:1.35;position:relative}
+.placed-task:hover .pt-actions{opacity:1}
+.pt-actions{opacity:0;display:flex;gap:2px;flex-shrink:0;transition:opacity .15s;margin-left:auto}
+.pt-actions span{cursor:pointer;font-size:14px;line-height:1;padding:1px 2px;border-radius:3px;transition:background .1s}
+.pt-actions span:hover{background:rgba(0,0,0,.12)}
+.placed-task.blue{background:var(--blue-light);border:1px solid var(--blue-mid);color:#0C447C}
+.placed-task.red-t{background:var(--red-light);border:1px solid var(--red-mid);color:#791F1F}
+.placed-task.amber-t{background:var(--amber-light);border:1px solid var(--amber-mid);color:var(--amber-dark)}
+
+/* Team */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px}
+.person-col{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;min-height:100px;transition:background .15s}
+.person-col.drag-over{background:var(--green-light);border-color:var(--green)}
+.person-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-mid);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0C447C;flex-shrink:0}
+.person-name-lbl{font-size:12px;font-weight:600;color:var(--text)}
+.person-tasks{display:flex;flex-direction:column;gap:4px;min-height:36px}
+.del-task{background:var(--green-light);border:1px solid var(--green-mid);border-radius:5px;padding:5px 7px;font-size:10px;color:#27500A;cursor:grab;position:relative}
+.del-task.overdue{background:var(--red-light);border-color:var(--red-mid);color:#791F1F}
+.del-task-row{display:flex;align-items:flex-start;gap:3px}
+.del-task .rx{margin-left:auto;cursor:pointer;opacity:.5;flex-shrink:0;font-size:14px;line-height:1}
+.del-task .rx:hover{opacity:1}
+.del-task:hover .dt-actions{opacity:1}
+.dt-actions{opacity:0;display:flex;gap:2px;flex-shrink:0;transition:opacity .15s}
+.dt-actions span{cursor:pointer;font-size:13px;line-height:1;padding:1px}
+.due-row{display:flex;align-items:center;gap:5px;margin-top:4px}
+.due-input{font-size:10px;border:1px solid var(--green-mid);border-radius:4px;padding:2px 5px;background:transparent;color:inherit;cursor:pointer;flex:1;min-width:0;font-family:inherit}
+.del-task.overdue .due-input{border-color:var(--red-mid)}
+.due-chip{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--amber-mid);color:#412402;white-space:nowrap;font-weight:600}
+.due-chip.overdue{background:var(--red-mid);color:#791F1F}
+
+.add-person-row{display:flex;gap:7px;margin-top:10px}
+.add-person-row input{flex:1;font-size:12px;padding:6px 9px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit}
+.empty-hint{font-size:10px;color:var(--text3);text-align:center;padding:12px 0;font-style:italic}
+.person-hd{position:relative}
+.person-hd:hover .person-edit-btn{opacity:1}
+.person-edit-btn{opacity:0;transition:opacity .15s;background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px;display:flex;align-items:center;margin-left:auto}
+.person-edit-btn:hover{color:var(--text)}
+.person-remove-btn{opacity:0;transition:opacity .15s;background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px;display:flex;align-items:center}
+.person-remove-btn:hover{color:var(--red)}
+.person-hd:hover .person-remove-btn{opacity:1}
+.person-name-input{font-size:12px;font-weight:600;color:var(--text);background:var(--surface);border:1px solid var(--blue);border-radius:5px;padding:2px 6px;font-family:inherit;width:100%;outline:none}
+
+/* Histórico */
+.hist-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.hist-toolbar input,.hist-toolbar select{font-size:12px;padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit}
+.hist-toolbar input{flex:1;min-width:140px}
+.hist-list{display:flex;flex-direction:column;gap:9px}
+.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 16px;display:flex;align-items:flex-start;gap:13px}
+.hist-card.deleted{border-left:3px solid #E24B4A}
+.hist-card.done{border-left:3px solid #639922}
+.hist-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.hist-icon.done{background:var(--green-light);color:var(--green)}
+.hist-icon.deleted{background:var(--red-light);color:var(--red)}
+.hist-body{flex:1;min-width:0}
+.hist-name{font-size:13px;font-weight:600;color:var(--text)}
+.hist-meta{font-size:11px;color:var(--text2);margin-top:4px;display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.hist-actions{display:flex;gap:6px;flex-shrink:0;align-items:flex-start}
+.restore-menu{position:relative;display:inline-block}
+.restore-dropdown{position:absolute;right:0;top:100%;margin-top:5px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);min-width:190px;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);display:none}
+.restore-dropdown.open{display:block}
+.restore-dropdown button{width:100%;text-align:left;font-size:12px;padding:8px 13px;background:none;border:none;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:8px;font-family:inherit;transition:background .1s}
+.restore-dropdown button:hover{background:var(--surface2)}
+.restore-dropdown .sep{height:1px;background:var(--border);margin:3px 0}
+.restore-dropdown .person-opt{font-size:10px;color:var(--text3);padding:5px 13px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.hist-empty{text-align:center;padding:50px 0;color:var(--text3);font-size:14px}
+.hist-empty i{font-size:32px;display:block;margin-bottom:10px;opacity:.3}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:none;align-items:center;justify-content:center;z-index:200}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:350px;max-width:95vw;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.modal h2{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:9px;color:var(--text)}
+.modal h2 i{color:var(--blue)}
+.modal label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.modal input,.modal select{width:100%;margin-bottom:12px;font-size:13px;padding:8px 11px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;transition:border-color .15s}
+.modal input:focus,.modal select:focus{outline:none;border-color:var(--blue)}
+.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.modal-left{display:flex;gap:6px}
+.modal-right{display:flex;gap:7px}
+.del-btn{font-size:12px;color:var(--red);background:transparent;border:1px solid var(--red-mid);border-radius:var(--radius);padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500;transition:background .15s}
+.del-btn:hover{background:var(--red-light)}
+.done-btn{font-size:12px;color:var(--green);background:transparent;border:1px solid var(--green-mid);border-radius:var(--radius);padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500;transition:background .15s}
+.done-btn:hover{background:var(--green-light)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1><i class="ti ti-building-community"></i> Gestão de Pendências de Obras</h1>
+    <div class="top-actions">
+      <span class="save-indicator" id="save-ind"><i class="ti ti-device-floppy"></i> <span id="save-txt">Carregando...</span></span>
+      <button class="btn primary" onclick="openModal(null)"><i class="ti ti-plus"></i> Nova Pendência</button>
+    </div>
+  </div>
+
+  <div class="alert-bar" id="alert-bar">
+    <i class="ti ti-alert-triangle alert-icon"></i>
+    <div class="alert-content">
+      <div class="alert-title">Pendências com prazo vencido</div>
+      <div id="alert-items"></div>
+    </div>
+    <span class="alert-dismiss" onclick="document.getElementById('alert-bar').classList.remove('show')">×</span>
+  </div>
+
+  <div class="main-tabs">
+    <button class="main-tab active" id="tab-ativas" onclick="switchTab('ativas')">
+      <i class="ti ti-list-check"></i> Ativas <span class="tab-badge" id="badge-ativas">0</span>
+    </button>
+    <button class="main-tab" id="tab-historico" onclick="switchTab('historico')">
+      <i class="ti ti-history"></i> Histórico <span class="tab-badge" id="badge-hist">0</span>
+    </button>
+  </div>
+
+  <!-- View Ativas -->
+  <div class="view active" id="view-ativas">
+    <div class="layout">
+      <div class="sidebar">
+        <div class="panel">
+          <div class="panel-hd">Pendências <span class="cbadge" id="task-count">0</span></div>
+          <div class="obra-tabs" id="obra-tabs"></div>
+          <div class="task-list" id="pending-list"></div>
+        </div>
+      </div>
+      <div class="main-area">
+        <div class="panel">
+          <div class="sec-title">
+            <i class="ti ti-calendar-week" style="color:var(--blue)"></i> Minha Agenda — Semana
+            <div class="week-nav">
+              <button class="week-nav-btn" onclick="changeWeek(-1)" title="Semana anterior"><i class="ti ti-chevron-left"></i></button>
+              <span class="week-nav-lbl" id="week-nav-lbl"></span>
+              <button class="week-nav-btn" onclick="changeWeek(1)" title="Próxima semana"><i class="ti ti-chevron-right"></i></button>
+              <button class="week-nav-today" onclick="goToday()">Hoje</button>
+            </div>
+          </div>
+          <div class="week-grid" id="week-grid"></div>
+        </div>
+        <div class="panel">
+          <div class="sec-title"><i class="ti ti-users" style="color:var(--green)"></i> Delegado para Equipe</div>
+          <div class="team-grid" id="team-grid"></div>
+          <div class="add-person-row">
+            <input type="text" id="new-person-input" placeholder="Nome da pessoa..." onkeydown="if(event.key==='Enter')addPerson()"/>
+            <button class="btn" onclick="addPerson()"><i class="ti ti-plus"></i> Adicionar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Histórico -->
+  <div class="view" id="view-historico">
+    <div class="panel">
+      <div class="hist-toolbar">
+        <input type="text" id="hist-search" placeholder="Buscar por obra ou descrição..." oninput="renderHist()"/>
+        <select id="hist-filter" onchange="renderHist()">
+          <option value="todos">Todos</option>
+          <option value="done">Concluídos</option>
+          <option value="deleted">Excluídos</option>
+        </select>
+      </div>
+      <div class="hist-list" id="hist-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal criar/editar -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2><i class="ti ti-pencil"></i> <span id="modal-title-txt">Nova Pendência</span></h2>
+    <label>Obra</label>
+    <input type="text" id="m-obra" placeholder="Nome da obra..." list="obras-dl"/>
+    <datalist id="obras-dl"></datalist>
+    <label>Descrição</label>
+    <input type="text" id="m-desc" placeholder="O que precisa ser feito..."/>
+    <label>Prioridade</label>
+    <select id="m-priority">
+      <option value="media">Média</option>
+      <option value="alta">Alta</option>
+      <option value="baixa">Baixa</option>
+    </select>
+    <label id="m-date-label" style="display:none">Data de execução</label>
+    <input type="date" id="m-execdate" style="display:none"/>
+    <div class="modal-actions">
+      <div class="modal-left">
+        <button class="done-btn" id="done-btn" onclick="archiveTask('done')" style="display:none"><i class="ti ti-circle-check"></i> Concluído</button>
+        <button class="del-btn" id="del-btn" onclick="archiveTask('deleted')" style="display:none"><i class="ti ti-trash"></i> Excluir</button>
+      </div>
+      <div class="modal-right">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" onclick="confirmModal()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const STORE_KEY='obras_pend_v4';
+const today=new Date();
+
+let state={tasks:[],history:[],people:['Ana','Bruno','Carlos'],idCounter:1};
+let selObra='todas';
+let dragged=null;
+let editingId=null;
+let saveTimer=null;
+let openDropdown=null;
+let weekOffset=0;
+
+// ── Storage (localStorage para uso standalone) ──
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw){state=JSON.parse(raw);setSave('Dados carregados','saved');}
+    else{addSamples();setSave('Novo','');}
+  }catch(e){addSamples();setSave('Novo','');}
+  init();
+}
+function scheduleSave(){
+  setSave('Salvando...','');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    try{localStorage.setItem(STORE_KEY,JSON.stringify(state));setSave('Salvo automaticamente ✓','saved');}
+    catch(e){setSave('Erro ao salvar','');}
+  },800);
+}
+function setSave(txt,cls){
+  document.getElementById('save-txt').textContent=txt;
+  document.getElementById('save-ind').className='save-indicator'+(cls?' '+cls:'');
+}
+
+// ── Tabs ──
+function switchTab(name){
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('view-'+name).classList.add('active');
+  if(name==='historico')renderHist();
+}
+
+// ── Dates ──
+function isOverdue(ds){
+  if(!ds)return false;
+  const[y,m,d]=ds.split('-').map(Number);
+  const t=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  return new Date(y,m-1,d)<t;
+}
+function fmt(ds){if(!ds)return'';const[y,m,d]=ds.split('-');return`${d}/${m}`;}
+function fmtFull(ds){if(!ds)return'';const[y,m,d]=ds.split('-');return`${d}/${m}/${y}`;}
+
+// ── Alert ──
+function checkAlerts(){
+  const ov=state.tasks.filter(t=>t.person&&isOverdue(t.dueDate));
+  const bar=document.getElementById('alert-bar');
+  if(!ov.length){bar.classList.remove('show');return;}
+  document.getElementById('alert-items').innerHTML=ov.map(t=>`
+    <div class="alert-item"><i class="ti ti-clock" style="font-size:12px;flex-shrink:0"></i>
+    <b>${t.desc}</b> — ${t.obra} → <b>${t.person}</b> (prazo: ${fmt(t.dueDate)})</div>`).join('');
+  bar.classList.add('show');
+}
+
+// ── Week ──
+function getWeekDates(){
+  const dates=[];const mon=new Date(today);
+  const diff=today.getDay()===0?-6:1-today.getDay();
+  mon.setDate(today.getDate()+diff+(weekOffset*7));
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);dates.push(d);}
+  return dates;
+}
+function changeWeek(dir){weekOffset+=dir;initWeek();renderDayTasks();}
+function goToday(){weekOffset=0;initWeek();renderDayTasks();}
+function updateWeekLabel(dates){
+  const lbl=document.getElementById('week-nav-lbl');if(!lbl)return;
+  const s=dates[0],e=dates[6];
+  const sm=s.toLocaleString('pt-BR',{month:'short'}).replace('.','');
+  const em=e.toLocaleString('pt-BR',{month:'short'}).replace('.','');
+  lbl.textContent=sm===em?`${s.getDate()} – ${e.getDate()} ${em}`:`${s.getDate()} ${sm} – ${e.getDate()} ${em}`;
+}
+function initWeek(){
+  const grid=document.getElementById('week-grid');
+  const dates=getWeekDates();grid.innerHTML='';
+  updateWeekLabel(dates);
+  dates.forEach((d,i)=>{
+    const isT=d.toDateString()===today.toDateString();
+    const col=document.createElement('div');
+    col.className='day-col'+(isT?' today-col':'');col.dataset.day=i;
+    col.innerHTML=`<div class="day-lbl">${DAYS[d.getDay()]}</div>
+      <div class="day-num-wrap"><div class="day-num${isT?' today':''}">${d.getDate()}</div></div>
+      <div class="day-tasks" id="dt-${i}"></div>`;
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');});
+    col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
+    col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drag-over');dropDay(i,d);});
+    grid.appendChild(col);
+  });
+}
+
+// ── Renders ──
+function renderObraTabs(){
+  const obras=[...new Set(state.tasks.map(t=>t.obra).filter(Boolean))];
+  const tabs=document.getElementById('obra-tabs');
+  tabs.innerHTML=`<button class="obra-tab${selObra==='todas'?' active':''}" onclick="selObra='todas';render()">Todas</button>`;
+  obras.forEach(o=>tabs.innerHTML+=`<button class="obra-tab${selObra===o?' active':''}" onclick="selObra=${JSON.stringify(o)};render()">${o}</button>`);
+  document.getElementById('obras-dl').innerHTML=obras.map(o=>`<option value="${o}">`).join('');
+}
+
+function renderPending(){
+  const filtered=state.tasks.filter(t=>!t.execDate&&!t.person&&(selObra==='todas'||t.obra===selObra));
+  document.getElementById('task-count').textContent=filtered.length;
+  document.getElementById('badge-ativas').textContent=state.tasks.length;
+  const list=document.getElementById('pending-list');
+  if(!filtered.length){list.innerHTML='<div class="empty-hint">Arraste pendências aqui ou crie uma nova</div>';return;}
+  list.innerHTML='';
+  filtered.forEach(t=>{
+    const el=document.createElement('div');
+    el.className='task-card';el.draggable=true;el.dataset.p=t.priority;
+    el.innerHTML=`
+      <div class="card-actions">
+        <button class="icon-btn check" title="Concluir" onclick="quickArchive(${t.id},'done')"><i class="ti ti-circle-check"></i></button>
+        <button class="icon-btn" title="Editar" onclick="openModal(${t.id})"><i class="ti ti-pencil"></i></button>
+        <button class="icon-btn del" title="Excluir" onclick="quickArchive(${t.id},'deleted')"><i class="ti ti-trash"></i></button>
+      </div>
+      <div class="task-name">${t.desc}</div>
+      <div class="task-meta"><span class="pchip p-${t.priority}">${cap(t.priority)}</span><span>${t.obra}</span></div>`;
+    el.addEventListener('dragstart',()=>{dragged=t.id;el.classList.add('dragging');});
+    el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+    list.appendChild(el);
+  });
+  list.addEventListener('dragover',e=>e.preventDefault());
+  list.addEventListener('drop',e=>{e.preventDefault();returnTask(dragged);});
+}
+
+function renderDayTasks(){
+  const dates=getWeekDates();
+  for(let i=0;i<7;i++){
+    const c=document.getElementById(`dt-${i}`);if(!c)continue;
+    const d=dates[i];
+    const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+    const dateStr=`${y}-${m}-${dd}`;
+    const ts=state.tasks.filter(t=>t.execDate===dateStr&&!t.person);
+    if(!ts.length){c.innerHTML='<div class="empty-hint" style="padding:4px 0">Solte aqui</div>';continue;}
+    c.innerHTML='';
+    ts.forEach(t=>{
+      const cls=t.priority==='alta'?'red-t':t.priority==='media'?'amber-t':'blue';
+      const el=document.createElement('div');el.className=`placed-task ${cls}`;el.draggable=true;
+      el.innerHTML=`
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${t.desc}</div>
+          <div style="opacity:.65">${t.obra}</div>
+        </div>
+        <div class="pt-actions">
+          <span title="Concluir" onclick="quickArchive(${t.id},'done')"><i class="ti ti-circle-check" style="font-size:13px"></i></span>
+          <span title="Editar" onclick="openModal(${t.id})"><i class="ti ti-pencil" style="font-size:13px"></i></span>
+          <span title="Devolver" onclick="returnTask(${t.id})">×</span>
+        </div>`;
+      el.addEventListener('dragstart',()=>dragged=t.id);
+      c.appendChild(el);
+    });
+  }
+}
+
+function renderTeam(){
+  const grid=document.getElementById('team-grid');grid.innerHTML='';
+  state.people.forEach(name=>{
+    const init=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const col=document.createElement('div');col.className='person-col';col.dataset.person=name;
+    col.innerHTML=`
+      <div class="person-hd">
+        <div class="avatar" id="av-${name.replace(/\s/g,'_')}">${init}</div>
+        <div class="person-name-lbl" id="pnl-${name.replace(/\s/g,'_')}">${name}</div>
+        <button class="person-edit-btn" title="Renomear" onclick="startEditPerson('${name.replace(/'/g,"\\'")}')"><i class="ti ti-pencil"></i></button>
+        <button class="person-remove-btn" title="Remover pessoa" onclick="removePerson('${name.replace(/'/g,"\\'")}')"><i class="ti ti-user-minus"></i></button>
+      </div>
+      <div class="person-tasks" id="pt-${name.replace(/\s/g,'_')}"></div>`;
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');});
+    col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
+    col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drag-over');dropPerson(name);});
+    grid.appendChild(col);
+  });
+  renderPersonTasks();
+}
+
+function startEditPerson(name){
+  const key=name.replace(/\s/g,'_');
+  const lbl=document.getElementById(`pnl-${key}`);
+  const av=document.getElementById(`av-${key}`);
+  if(!lbl)return;
+  const inp=document.createElement('input');
+  inp.className='person-name-input';
+  inp.value=name;
+  lbl.replaceWith(inp);
+  inp.focus();inp.select();
+  function commit(){
+    const newName=inp.value.trim();
+    if(newName&&newName!==name){
+      const idx=state.people.indexOf(name);
+      if(idx>-1){
+        state.people[idx]=newName;
+        state.tasks.forEach(t=>{if(t.person===name)t.person=newName;});
+        state.history.forEach(h=>{if(h.person===name)h.person=newName;});
+        scheduleSave();
+      }
+    }
+    renderTeam();
+  }
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape'){inp.value=name;inp.blur();}});
+}
+
+function removePerson(name){
+  const hasTasks=state.tasks.some(t=>t.person===name);
+  if(hasTasks){
+    if(!confirm(`"${name}" tem pendências delegadas. Elas voltarão para a lista ao remover. Continuar?`))return;
+    state.tasks.forEach(t=>{if(t.person===name){t.person=null;}});
+  }
+  state.people=state.people.filter(p=>p!==name);
+  render();scheduleSave();
+}
+
+function renderPersonTasks(){
+  state.people.forEach(name=>{
+    const c=document.getElementById(`pt-${name.replace(/\s/g,'_')}`);if(!c)return;
+    const ts=state.tasks.filter(t=>t.person===name);
+    if(!ts.length){c.innerHTML='<div class="empty-hint" style="padding:4px 0">Solte aqui</div>';return;}
+    c.innerHTML='';
+    ts.forEach(t=>{
+      const ov=isOverdue(t.dueDate);
+      const el=document.createElement('div');el.className=`del-task${ov?' overdue':''}`;el.draggable=true;
+      el.innerHTML=`
+        <div class="del-task-row">
+          <span style="flex:1"><b>${t.desc}</b><br><span style="opacity:.7">${t.obra}</span></span>
+          <div class="dt-actions">
+            <span title="Concluir" onclick="quickArchive(${t.id},'done')"><i class="ti ti-circle-check"></i></span>
+            <span title="Editar" onclick="openModal(${t.id})"><i class="ti ti-pencil"></i></span>
+          </div>
+          <span class="rx" onclick="returnTask(${t.id})">×</span>
+        </div>
+        <div class="due-row">
+          <input type="date" class="due-input" value="${t.dueDate||''}" onchange="setDue(${t.id},this.value)" title="Data de entrega"/>
+          ${t.dueDate?`<span class="due-chip${ov?' overdue':''}">${ov?'Vencido':'Entrega'}: ${fmt(t.dueDate)}</span>`:''}
+        </div>`;
+      el.addEventListener('dragstart',()=>dragged=t.id);
+      c.appendChild(el);
+    });
+  });
+}
+
+// ── Histórico ──
+function renderHist(){
+  const q=(document.getElementById('hist-search').value||'').toLowerCase();
+  const f=document.getElementById('hist-filter').value;
+  let items=state.history.filter(h=>{
+    if(f!=='todos'&&h.status!==f)return false;
+    if(q&&!h.desc.toLowerCase().includes(q)&&!h.obra.toLowerCase().includes(q))return false;
+    return true;
+  }).slice().reverse();
+  document.getElementById('badge-hist').textContent=state.history.length;
+  const list=document.getElementById('hist-list');
+  if(!items.length){
+    list.innerHTML=`<div class="hist-empty"><i class="ti ti-inbox"></i>Nenhum registro encontrado</div>`;return;
+  }
+  list.innerHTML='';
+  items.forEach(h=>{
+    const isDone=h.status==='done';
+    const card=document.createElement('div');card.className=`hist-card ${h.status}`;
+    const hJson=JSON.stringify(h).replace(/"/g,'&quot;');
+    card.innerHTML=`
+      <div class="hist-icon ${h.status}"><i class="ti ${isDone?'ti-circle-check':'ti-trash'}"></i></div>
+      <div class="hist-body">
+        <div class="hist-name">${h.desc}</div>
+        <div class="hist-meta">
+          <span>${h.obra}</span>
+          <span class="pchip p-${h.priority}">${cap(h.priority)}</span>
+          ${h.person?`<span><i class="ti ti-user" style="font-size:10px"></i> ${h.person}</span>`:''}
+          ${h.execDate?`<span><i class="ti ti-calendar" style="font-size:10px"></i> ${fmt(h.execDate)}</span>`:''}
+          <span style="opacity:.6">${isDone?'Concluído':'Excluído'} em ${fmtFull(h.archivedAt)}</span>
+        </div>
+      </div>
+      <div class="hist-actions">
+        <div class="restore-menu" id="rm-${h.hid}">
+          <button class="btn sm" onclick="toggleDropdown('${h.hid}')"><i class="ti ti-corner-up-left"></i> Restaurar</button>
+          <div class="restore-dropdown" id="rd-${h.hid}">
+            <button onclick="restoreTask('${h.hid}','pending')"><i class="ti ti-list"></i> Lista de pendências</button>
+            <button onclick="restoreTask('${h.hid}','agenda')"><i class="ti ti-calendar-week"></i> Minha agenda</button>
+            <div class="sep"></div>
+            <div class="person-opt">Delegar para:</div>
+            ${state.people.map(p=>`<button onclick="restoreTask('${h.hid}','person',${JSON.stringify(p).replace(/"/g,'&quot;')})"><i class="ti ti-user"></i> ${p}</button>`).join('')}
+          </div>
+        </div>
+        <button class="btn sm" style="color:var(--red);border-color:var(--red-mid)" onclick="permDelete('${h.hid}')" title="Remover permanentemente"><i class="ti ti-x"></i></button>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function toggleDropdown(hid){
+  if(openDropdown&&openDropdown!==hid){const prev=document.getElementById(`rd-${openDropdown}`);if(prev)prev.classList.remove('open');}
+  const dd=document.getElementById(`rd-${hid}`);
+  dd.classList.toggle('open');
+  openDropdown=dd.classList.contains('open')?hid:null;
+}
+document.addEventListener('click',e=>{
+  if(openDropdown&&!e.target.closest('.restore-menu')){
+    const dd=document.getElementById(`rd-${openDropdown}`);
+    if(dd)dd.classList.remove('open');
+    openDropdown=null;
+  }
+});
+
+function restoreTask(hid,dest,person){
+  const dd=document.getElementById(`rd-${hid}`);if(dd)dd.classList.remove('open');openDropdown=null;
+  const h=state.history.find(x=>x.hid===hid);if(!h)return;
+  const restored={id:state.idCounter++,obra:h.obra,desc:h.desc,priority:h.priority,dayIdx:null,person:null,dueDate:null,execDate:null};
+  if(dest==='agenda'){
+    const dates=getWeekDates();
+    const mon=dates[1]||dates[0];
+    const y=mon.getFullYear(),m=String(mon.getMonth()+1).padStart(2,'0'),d=String(mon.getDate()).padStart(2,'0');
+    restored.execDate=`${y}-${m}-${d}`;restored.dayIdx=1;
+  }
+  if(dest==='person'){restored.person=person;}
+  state.tasks.push(restored);
+  state.history=state.history.filter(x=>x.hid!==hid);
+  render();renderHist();scheduleSave();
+  switchTab('ativas');
+}
+
+function permDelete(hid){
+  if(!confirm('Remover permanentemente do histórico?'))return;
+  state.history=state.history.filter(h=>h.hid!==hid);
+  renderHist();scheduleSave();
+}
+
+// ── Archive ──
+function archive(id,status){
+  const t=state.tasks.find(x=>x.id===id);if(!t)return;
+  const now=today.toISOString().split('T')[0];
+  state.history.push({...t,hid:`h${Date.now()}`,status,archivedAt:now});
+  state.tasks=state.tasks.filter(x=>x.id!==id);
+  render();scheduleSave();
+}
+function quickArchive(id,status){archive(id,status);}
+
+// ── Drag & drop ──
+function dropDay(idx,dateObj){
+  const t=state.tasks.find(x=>x.id===dragged);if(!t)return;
+  const y=dateObj.getFullYear(),m=String(dateObj.getMonth()+1).padStart(2,'0'),d=String(dateObj.getDate()).padStart(2,'0');
+  t.execDate=`${y}-${m}-${d}`;
+  t.dayIdx=idx;
+  t.person=null;t.dueDate=null;
+  render();scheduleSave();
+}
+function dropPerson(name){
+  const t=state.tasks.find(x=>x.id===dragged);if(!t)return;
+  t.person=name;t.dayIdx=null;t.execDate=null;
+  render();scheduleSave();
+}
+function returnTask(id){
+  const t=state.tasks.find(x=>x.id===id);if(!t)return;
+  t.dayIdx=null;t.person=null;t.dueDate=null;t.execDate=null;
+  render();scheduleSave();
+}
+function setDue(id,val){const t=state.tasks.find(x=>x.id===id);if(t){t.dueDate=val;render();scheduleSave();}}
+
+// ── Modal ──
+function openModal(id){
+  editingId=id;const isEdit=id!=null;
+  document.getElementById('modal-title-txt').textContent=isEdit?'Editar Pendência':'Nova Pendência';
+  document.getElementById('del-btn').style.display=isEdit?'flex':'none';
+  document.getElementById('done-btn').style.display=isEdit?'flex':'none';
+  const dl=document.getElementById('m-date-label'),di=document.getElementById('m-execdate');
+  if(isEdit){
+    const t=state.tasks.find(x=>x.id===id);
+    document.getElementById('m-obra').value=t.obra;
+    document.getElementById('m-desc').value=t.desc;
+    document.getElementById('m-priority').value=t.priority;
+    if(t.execDate&&!t.person){dl.style.display='block';di.style.display='block';di.value=t.execDate||'';}
+    else{dl.style.display='none';di.style.display='none';}
+  } else {
+    document.getElementById('m-obra').value='';
+    document.getElementById('m-desc').value='';
+    document.getElementById('m-priority').value='media';
+    dl.style.display='none';di.style.display='none';
+  }
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('m-desc').focus(),50);
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');editingId=null;}
+function confirmModal(){
+  const obra=document.getElementById('m-obra').value.trim();
+  const desc=document.getElementById('m-desc').value.trim();
+  const priority=document.getElementById('m-priority').value;
+  const execDate=document.getElementById('m-execdate').value;
+  if(!obra||!desc){alert('Preencha a obra e a descrição.');return;}
+  if(editingId!=null){
+    const t=state.tasks.find(x=>x.id===editingId);
+    t.obra=obra;t.desc=desc;t.priority=priority;
+    if(t.execDate&&!t.person&&execDate){t.execDate=execDate;initWeek();}
+  } else {
+    state.tasks.push({id:state.idCounter++,obra,desc,priority,dayIdx:null,person:null,dueDate:null,execDate:null});
+  }
+  closeModal();render();scheduleSave();
+}
+function archiveTask(status){if(!editingId)return;archive(editingId,status);closeModal();}
+
+function addPerson(){
+  const inp=document.getElementById('new-person-input');
+  const name=inp.value.trim();
+  if(!name||state.people.includes(name))return;
+  state.people.push(name);inp.value='';
+  renderTeam();scheduleSave();
+}
+
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function addSamples(){
+  const s=[
+    {obra:'Residência Silva',desc:'Verificar instalação elétrica',priority:'alta'},
+    {obra:'Residência Silva',desc:'Revisar rejunte do banheiro',priority:'media'},
+    {obra:'Ed. Comercial Centro',desc:'Aprovar projeto hidráulico',priority:'alta'},
+    {obra:'Ed. Comercial Centro',desc:'Contratar pintura fachada',priority:'media'},
+    {obra:'Condomínio Verde',desc:'Fiscalizar fundações',priority:'baixa'},
+    {obra:'Condomínio Verde',desc:'Solicitar alvarás pendentes',priority:'alta'},
+  ];
+  s.forEach(x=>state.tasks.push({id:state.idCounter++,...x,dayIdx:null,person:null,dueDate:null,execDate:null}));
+  state.tasks.push({id:state.idCounter++,obra:'Residência Silva',desc:'Entregar memorial descritivo',priority:'alta',dayIdx:null,person:'Ana',dueDate:'2026-05-01',execDate:null});
+  state.history.push({id:99,hid:'h_demo1',obra:'Condomínio Verde',desc:'Reunião com arquiteto',priority:'media',person:null,execDate:'2026-05-20',dueDate:null,status:'done',archivedAt:'2026-05-20'});
+  state.history.push({id:98,hid:'h_demo2',obra:'Ed. Comercial Centro',desc:'Orçamento de pintura cancelado',priority:'baixa',person:'Bruno',execDate:null,dueDate:'2026-05-10',status:'deleted',archivedAt:'2026-05-12'});
+}
+
+function render(){renderObraTabs();renderPending();renderDayTasks();renderPersonTasks();checkAlerts();}
+function init(){initWeek();renderTeam();render();}
+
+loadState();
+</script>
+</body>
+</html>
