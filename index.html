@@ -117,10 +117,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .day-tasks{display:flex;flex-direction:column;gap:5px;flex:1;min-height:50px}
 
 /* Cards na agenda — maiores e legíveis */
-.placed-task{border-radius:6px;padding:7px 9px;font-size:11px;cursor:grab;display:flex;align-items:flex-start;gap:5px;line-height:1.4;position:relative;word-break:break-word}
+.placed-task{border-radius:6px;padding:7px 9px;font-size:11px;cursor:grab;display:flex;flex-direction:column;gap:4px;line-height:1.4;position:relative;word-break:break-word}
 .placed-task:hover .pt-actions{opacity:1}
-.pt-actions{opacity:0;display:flex;gap:2px;flex-shrink:0;transition:opacity .15s;flex-direction:column}
-.pt-actions span{cursor:pointer;font-size:14px;line-height:1;padding:1px;border-radius:3px;transition:background .1s}
+.pt-actions{opacity:0;display:flex;gap:3px;transition:opacity .15s;justify-content:flex-end}
+.pt-actions span{cursor:pointer;font-size:14px;line-height:1;padding:2px 3px;border-radius:3px;transition:background .1s}
 .pt-actions span:hover{background:rgba(0,0,0,.12)}
 .placed-task.blue{background:var(--blue-light);border:1px solid var(--blue-mid);color:#0C447C}
 .placed-task.red-t{background:var(--red-light);border:1px solid var(--red-mid);color:#791F1F}
@@ -534,14 +534,14 @@ function renderDayTasks(){
       const el = document.createElement('div');
       el.className=`placed-task ${cls}`; el.draggable=true;
       el.innerHTML=`
-        <div style="flex:1;min-width:0">
-          <div class="placed-task-desc">${t.desc}</div>
-          <div class="placed-task-obra">${t.obra}</div>
-        </div>
         <div class="pt-actions">
           <span title="Concluir" onclick="quickArchive(${t.id},'done')"><i class="ti ti-circle-check" style="font-size:13px"></i></span>
           <span title="Editar" onclick="openModal(${t.id})"><i class="ti ti-pencil" style="font-size:13px"></i></span>
           <span title="Devolver" onclick="returnTask(${t.id})">×</span>
+        </div>
+        <div>
+          <div class="placed-task-desc">${t.desc}</div>
+          <div class="placed-task-obra">${t.obra}</div>
         </div>`;
       el.addEventListener('dragstart',()=>dragged=t.id);
       c.appendChild(el);
